@@ -21,25 +21,25 @@
  ****************************************************************/
 #pragma once
 
-/*NetExample*/
-#include "services/p3NetExample.h"
+/*WebView*/
+#include "services/p3WebView.h"
 
 /*libretroshare"*/
 #include <retroshare/rsplugin.h>
 
-#include "gui/NetExampleMainpage.h"
+#include "gui/WebViewMainpage.h"
 
-class NetExampleGUIHandler ;
-class NetExampleNotify ;
+class WebViewGUIHandler ;
+class WebViewNotify ;
 
-class NetExamplePlugin: public RsPlugin
+class WebViewPlugin: public RsPlugin
 {
 	public:
-		NetExamplePlugin() ;
-		virtual ~NetExamplePlugin() {}
+		WebViewPlugin() ;
+		virtual ~WebViewPlugin() {}
 
 		virtual p3Service      *p3_service() 			const	;
-		virtual uint16_t        rs_service_id()         const { return RS_SERVICE_TYPE_NetExample_PLUGIN ; }
+		virtual uint16_t        rs_service_id()         const { return RS_SERVICE_TYPE_WebView_PLUGIN ; }
 		//virtual ConfigPage     *qt_config_page()        const ;
 		virtual QDialog        *qt_about_page()         const ;
 		//virtual ChatWidgetHolder *qt_get_chat_widget_holder(ChatWidget *chatWidget) const ;
@@ -51,7 +51,7 @@ class NetExamplePlugin: public RsPlugin
 		virtual void getPluginVersion(int& major, int& minor, int &build, int& svn_rev) const ;
 		virtual void setPlugInHandler(RsPluginHandler *pgHandler);
 
-		virtual std::string configurationFileName() const { return "NetExample.cfg" ; }
+		virtual std::string configurationFileName() const { return "WebView.cfg" ; }
 
 		virtual std::string getShortPluginDescription() const ;
 		virtual std::string getPluginName() const;
@@ -63,14 +63,14 @@ class NetExamplePlugin: public RsPlugin
 		virtual MainPage       *qt_page()       			const	;
 
 	private:
-		mutable p3NetExample *mNetExample ;
+		mutable p3WebView *mWebView ;
 		mutable RsPluginHandler *mPlugInHandler;
 		mutable RsPeers* mPeers;
 		mutable ConfigPage *config_page ;
 		mutable QIcon *mIcon;
 		mutable MainPage* mainpage ;
 
-		NetExampleNotify *mNetExampleNotify ;
-		NetExampleGUIHandler *mNetExampleGUIHandler ;
+		WebViewNotify *mWebViewNotify ;
+		WebViewGUIHandler *mWebViewGUIHandler ;
 };
 

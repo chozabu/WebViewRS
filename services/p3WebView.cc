@@ -29,19 +29,19 @@
 
 #include <sstream> // for std::istringstream
 
-#include "services/p3NetExample.h"
-#include "services/rsNetExampleItems.h"
+#include "services/p3WebView.h"
+#include "services/rsWebViewItems.h"
 
 #include <sys/time.h>
 
-#include "gui/NetExampleNotify.h"
+#include "gui/WebViewNotify.h"
 
 
-//#define DEBUG_NetExample		1
+//#define DEBUG_WebView		1
 
 
 /* DEFINE INTERFACE POINTER! */
-RsNetExample *rsNetExample = NULL;
+RsWebView *rsWebView = NULL;
 
 
 
@@ -82,24 +82,24 @@ static double convert64bitsToTs(uint64_t bits)
 	return ts;
 }
 
-p3NetExample::p3NetExample(RsPluginHandler *handler,NetExampleNotify *notifier)
-	 : RsPQIService(RS_SERVICE_TYPE_NetExample_PLUGIN,0,handler), mNetExampleMtx("p3NetExample"), mServiceControl(handler->getServiceControl()) , mNotify(notifier)
+p3WebView::p3WebView(RsPluginHandler *handler,WebViewNotify *notifier)
+	 : RsPQIService(RS_SERVICE_TYPE_WebView_PLUGIN,0,handler), mWebViewMtx("p3WebView"), mServiceControl(handler->getServiceControl()) , mNotify(notifier)
 {
-	addSerialType(new RsNetExampleSerialiser());
+	addSerialType(new RsWebViewSerialiser());
 
 
 		//plugin default configuration
 
 }
-RsServiceInfo p3NetExample::getServiceInfo()
+RsServiceInfo p3WebView::getServiceInfo()
 {
-	const std::string TURTLE_APP_NAME = "NetExample";
+	const std::string TURTLE_APP_NAME = "WebView";
     const uint16_t TURTLE_APP_MAJOR_VERSION  =       1;
     const uint16_t TURTLE_APP_MINOR_VERSION  =       0;
     const uint16_t TURTLE_MIN_MAJOR_VERSION  =       1;
     const uint16_t TURTLE_MIN_MINOR_VERSION  =       0;
 
-	return RsServiceInfo(RS_SERVICE_TYPE_NetExample_PLUGIN,
+	return RsServiceInfo(RS_SERVICE_TYPE_WebView_PLUGIN,
                          TURTLE_APP_NAME,
                          TURTLE_APP_MAJOR_VERSION,
                          TURTLE_APP_MINOR_VERSION,
@@ -107,10 +107,10 @@ RsServiceInfo p3NetExample::getServiceInfo()
                          TURTLE_MIN_MINOR_VERSION);
 }
 
-int	p3NetExample::tick()
+int	p3WebView::tick()
 {
-#ifdef DEBUG_NetExample
-	std::cerr << "ticking p3NetExample" << std::endl;
+#ifdef DEBUG_WebView
+	std::cerr << "ticking p3WebView" << std::endl;
 #endif
 
 	//processIncoming();
@@ -119,12 +119,12 @@ int	p3NetExample::tick()
 	return 0;
 }
 
-int	p3NetExample::status()
+int	p3WebView::status()
 {
 	return 1;
 }
 #include<qjsondocument.h>
-void p3NetExample::str_msg_peer(RsPeerId peerID, QString strdata){
+void p3WebView::str_msg_peer(RsPeerId peerID, QString strdata){
 	QVariantMap map;
 	map.insert("type", "chat");
 	map.insert("message", strdata);
@@ -132,16 +132,16 @@ void p3NetExample::str_msg_peer(RsPeerId peerID, QString strdata){
 	qvm_msg_peer(peerID,map);
 }
 
-void p3NetExample::qvm_msg_peer(RsPeerId peerID, QVariantMap data){
+void p3WebView::qvm_msg_peer(RsPeerId peerID, QVariantMap data){
 	QJsonDocument jsondoc = QJsonDocument::fromVariant(data);
 	std::string msg = jsondoc.toJson().toStdString();
 	raw_msg_peer(peerID, msg);
 }
-void p3NetExample::raw_msg_peer(RsPeerId peerID, std::string msg){
+void p3WebView::raw_msg_peer(RsPeerId peerID, std::string msg){
 	std::cout << "MSging: " << peerID.toStdString() << "\n";
 	std::cout << "MSging: " << msg << "\n";
 		/* create the packet */
-		RsNetExampleDataItem *pingPkt = new RsNetExampleDataItem();
+		RsWebViewDataItem *pingPkt = new RsWebViewDataItem();
 		pingPkt->PeerId(peerID);
 		pingPkt->m_msg = msg;
 		pingPkt->data_size = msg.size();
@@ -150,8 +150,8 @@ void p3NetExample::raw_msg_peer(RsPeerId peerID, std::string msg){
 
 		//storePingAttempt(*it, ts, mCounter);
 
-#ifdef DEBUG_NetExample
-		std::cerr << "p3NetExample::msg_all() With Packet:";
+#ifdef DEBUG_WebView
+		std::cerr << "p3WebView::msg_all() With Packet:";
 		std::cerr << std::endl;
 		pingPkt->print(std::cerr, 10);
 #endif
@@ -159,7 +159,7 @@ void p3NetExample::raw_msg_peer(RsPeerId peerID, std::string msg){
 		sendItem(pingPkt);
 }
 
-void p3NetExample::msg_all(std::string msg){
+void p3WebView::msg_all(std::string msg){
 	/* we ping our peers */
 	//if(!mServiceControl)
 	//    return ;
@@ -171,8 +171,8 @@ void p3NetExample::msg_all(std::string msg){
 
 	double ts = getCurrentTS();
 
-#ifdef DEBUG_NetExample
-	std::cerr << "p3NetExample::msg_all() @ts: " << ts;
+#ifdef DEBUG_WebView
+	std::cerr << "p3WebView::msg_all() @ts: " << ts;
 	std::cerr << std::endl;
 #endif
 
@@ -185,44 +185,16 @@ void p3NetExample::msg_all(std::string msg){
 	}
 }
 
-void p3NetExample::ping_all(){
+void p3WebView::ping_all(){
 	//TODO ping all!
 }
 
-void p3NetExample::broadcast_paint(int x, int y)
+
+
+
+void p3WebView::handleData(RsWebViewDataItem *item)
 {
-	std::list< RsPeerId > onlineIds;
-	//    mServiceControl->getPeersConnected(getServiceInfo().mServiceType, onlineIds);
-	rsPeers->getOnlineList(onlineIds);
-
-	double ts = getCurrentTS();
-
-
-	std::cout << "READY TO PAINT: " << onlineIds.size() << "\n";
-	/* prepare packets */
-	std::list<RsPeerId>::iterator it;
-	for(it = onlineIds.begin(); it != onlineIds.end(); it++)
-	{
-
-		std::cout << "painting to: " << (*it).toStdString() << "\n";
-		QVariantMap map;
-		map.insert("type", "paint");
-		map.insert("x", x);
-		map.insert("y", y);
-
-		qvm_msg_peer(RsPeerId(*it),map);
-		/* create the packet */
-		//TODO send paint packets
-	}
-}
-
-//TODO  mNotify->notifyReceivedPaint(item->PeerId(), item->x,item->y);
-
-
-
-void p3NetExample::handleData(RsNetExampleDataItem *item)
-{
-	RsStackMutex stack(mNetExampleMtx); /****** LOCKED MUTEX *******/
+	RsStackMutex stack(mWebViewMtx); /****** LOCKED MUTEX *******/
 
 	// store the data in a queue.
 
@@ -230,7 +202,7 @@ void p3NetExample::handleData(RsNetExampleDataItem *item)
 	mNotify->notifyReceivedMsg(item->PeerId(), QString::fromStdString(item->m_msg));
 }
 
-bool	p3NetExample::recvItem(RsItem *item)
+bool	p3WebView::recvItem(RsItem *item)
 {
 	std::cout << "recvItem type: " << item->PacketSubType() << "\n";
 	/* pass to specific handler */
@@ -238,8 +210,8 @@ bool	p3NetExample::recvItem(RsItem *item)
 
 	switch(item->PacketSubType())
 	{
-		case RS_PKT_SUBTYPE_NetExample_DATA:
-			handleData(dynamic_cast<RsNetExampleDataItem*>(item));
+		case RS_PKT_SUBTYPE_WebView_DATA:
+			handleData(dynamic_cast<RsWebViewDataItem*>(item));
 			keep = true ;
 			break;
 
@@ -255,7 +227,7 @@ bool	p3NetExample::recvItem(RsItem *item)
 
 
 
-RsTlvKeyValue p3NetExample::push_int_value(const std::string& key,int value)
+RsTlvKeyValue p3WebView::push_int_value(const std::string& key,int value)
 {
 	RsTlvKeyValue kv ;
 	kv.key = key ;
@@ -263,7 +235,7 @@ RsTlvKeyValue p3NetExample::push_int_value(const std::string& key,int value)
 
 	return kv ;
 }
-int p3NetExample::pop_int_value(const std::string& s)
+int p3WebView::pop_int_value(const std::string& s)
 {
 	std::istringstream is(s) ;
 
@@ -273,25 +245,25 @@ int p3NetExample::pop_int_value(const std::string& s)
 	return val ;
 }
 
-bool p3NetExample::saveList(bool& cleanup, std::list<RsItem*>& lst)
+bool p3WebView::saveList(bool& cleanup, std::list<RsItem*>& lst)
 {
 	cleanup = true ;
 
 	RsConfigKeyValueSet *vitem = new RsConfigKeyValueSet ;
 
-	/*vitem->tlvkvs.pairs.push_back(push_int_value("P3NetExample_CONFIG_ATRANSMIT",_atransmit)) ;
-	vitem->tlvkvs.pairs.push_back(push_int_value("P3NetExample_CONFIG_VOICEHOLD",_voice_hold)) ;
-	vitem->tlvkvs.pairs.push_back(push_int_value("P3NetExample_CONFIG_VADMIN"   ,_vadmin)) ;
-	vitem->tlvkvs.pairs.push_back(push_int_value("P3NetExample_CONFIG_VADMAX"   ,_vadmax)) ;
-	vitem->tlvkvs.pairs.push_back(push_int_value("P3NetExample_CONFIG_NOISE_SUP",_noise_suppress)) ;
-	vitem->tlvkvs.pairs.push_back(push_int_value("P3NetExample_CONFIG_MIN_LOUDN",_min_loudness)) ;
-	vitem->tlvkvs.pairs.push_back(push_int_value("P3NetExample_CONFIG_ECHO_CNCL",_echo_cancel)) ;*/
+	/*vitem->tlvkvs.pairs.push_back(push_int_value("P3WebView_CONFIG_ATRANSMIT",_atransmit)) ;
+	vitem->tlvkvs.pairs.push_back(push_int_value("P3WebView_CONFIG_VOICEHOLD",_voice_hold)) ;
+	vitem->tlvkvs.pairs.push_back(push_int_value("P3WebView_CONFIG_VADMIN"   ,_vadmin)) ;
+	vitem->tlvkvs.pairs.push_back(push_int_value("P3WebView_CONFIG_VADMAX"   ,_vadmax)) ;
+	vitem->tlvkvs.pairs.push_back(push_int_value("P3WebView_CONFIG_NOISE_SUP",_noise_suppress)) ;
+	vitem->tlvkvs.pairs.push_back(push_int_value("P3WebView_CONFIG_MIN_LOUDN",_min_loudness)) ;
+	vitem->tlvkvs.pairs.push_back(push_int_value("P3WebView_CONFIG_ECHO_CNCL",_echo_cancel)) ;*/
 
 	lst.push_back(vitem) ;
 
 	return true ;
 }
-bool p3NetExample::loadList(std::list<RsItem*>& load)
+bool p3WebView::loadList(std::list<RsItem*>& load)
 {
 	for(std::list<RsItem*>::const_iterator it(load.begin());it!=load.end();++it)
 	{
@@ -302,19 +274,19 @@ bool p3NetExample::loadList(std::list<RsItem*>& load)
 		/*
 		if(vitem != NULL)
 			for(std::list<RsTlvKeyValue>::const_iterator kit = vitem->tlvkvs.pairs.begin(); kit != vitem->tlvkvs.pairs.end(); ++kit) 
-				if(kit->key == "P3NetExample_CONFIG_ATRANSMIT")
+				if(kit->key == "P3WebView_CONFIG_ATRANSMIT")
 					_atransmit = pop_int_value(kit->value) ;
-				else if(kit->key == "P3NetExample_CONFIG_VOICEHOLD")
+				else if(kit->key == "P3WebView_CONFIG_VOICEHOLD")
 					_voice_hold = pop_int_value(kit->value) ;
-				else if(kit->key == "P3NetExample_CONFIG_VADMIN")
+				else if(kit->key == "P3WebView_CONFIG_VADMIN")
 					_vadmin = pop_int_value(kit->value) ;
-				else if(kit->key == "P3NetExample_CONFIG_VADMAX")
+				else if(kit->key == "P3WebView_CONFIG_VADMAX")
 					_vadmax = pop_int_value(kit->value) ;
-				else if(kit->key == "P3NetExample_CONFIG_NOISE_SUP")
+				else if(kit->key == "P3WebView_CONFIG_NOISE_SUP")
 					_noise_suppress = pop_int_value(kit->value) ;
-				else if(kit->key == "P3NetExample_CONFIG_MIN_LOUDN")
+				else if(kit->key == "P3WebView_CONFIG_MIN_LOUDN")
 					_min_loudness = pop_int_value(kit->value) ;
-				else if(kit->key == "P3NetExample_CONFIG_ECHO_CNCL")
+				else if(kit->key == "P3WebView_CONFIG_ECHO_CNCL")
 					_echo_cancel = pop_int_value(kit->value) ;
 
 		delete vitem ;
@@ -324,10 +296,10 @@ bool p3NetExample::loadList(std::list<RsItem*>& load)
 	return true ;
 }
 
-RsSerialiser *p3NetExample::setupSerialiser()
+RsSerialiser *p3WebView::setupSerialiser()
 {
 	RsSerialiser *rsSerialiser = new RsSerialiser();
-	rsSerialiser->addSerialType(new RsNetExampleSerialiser());
+	rsSerialiser->addSerialType(new RsWebViewSerialiser());
 	rsSerialiser->addSerialType(new RsGeneralConfigSerialiser());
 
 	return rsSerialiser ;

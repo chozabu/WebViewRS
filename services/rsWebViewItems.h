@@ -23,7 +23,7 @@
 #pragma once
 
 /*
- * libretroshare/src/serialiser: rsNetExampleItems.h
+ * libretroshare/src/serialiser: rsWebViewItems.h
  *
  * RetroShare Serialiser.
  *
@@ -54,23 +54,23 @@
 
 /**************************************************************************/
 
-const uint16_t RS_SERVICE_TYPE_NetExample_PLUGIN = 0xb00b5;
+const uint16_t RS_SERVICE_TYPE_WebView_PLUGIN = 0x3eb;
 
-const uint8_t RS_PKT_SUBTYPE_NetExample_DATA 	   = 0x01;
+const uint8_t RS_PKT_SUBTYPE_WebView_DATA 	   = 0x01;
 
-const uint8_t QOS_PRIORITY_RS_NetExample = 9 ;
+const uint8_t QOS_PRIORITY_RS_WebView = 9 ;
 
 
-class RsNetExampleItem: public RsItem
+class RsWebViewItem: public RsItem
 {
 	public:
-		RsNetExampleItem(uint8_t NetExample_subtype)
-			: RsItem(RS_PKT_VERSION_SERVICE,RS_SERVICE_TYPE_NetExample_PLUGIN,NetExample_subtype)
+		RsWebViewItem(uint8_t WebView_subtype)
+			: RsItem(RS_PKT_VERSION_SERVICE,RS_SERVICE_TYPE_WebView_PLUGIN,WebView_subtype)
 		{ 
-			setPriorityLevel(QOS_PRIORITY_RS_NetExample) ;
+			setPriorityLevel(QOS_PRIORITY_RS_WebView) ;
 		}	
 
-		virtual ~RsNetExampleItem() {};
+		virtual ~RsWebViewItem() {};
 		virtual void clear() {};
 		virtual std::ostream& print(std::ostream &out, uint16_t indent = 0) = 0 ;
 
@@ -79,16 +79,16 @@ class RsNetExampleItem: public RsItem
 };
 
 
-class RsNetExampleDataItem: public RsNetExampleItem
+class RsWebViewDataItem: public RsWebViewItem
 {
 	public:
-		RsNetExampleDataItem() :RsNetExampleItem(RS_PKT_SUBTYPE_NetExample_DATA) {}
-		RsNetExampleDataItem(void *data,uint32_t size) ; // de-serialization
+		RsWebViewDataItem() :RsWebViewItem(RS_PKT_SUBTYPE_WebView_DATA) {}
+		RsWebViewDataItem(void *data,uint32_t size) ; // de-serialization
 
 		virtual bool serialise(void *data,uint32_t& size) ;
 		virtual uint32_t serial_size() const ; 							
 
-		virtual ~RsNetExampleDataItem()
+		virtual ~RsWebViewDataItem()
 		{
 		}
 		virtual std::ostream& print(std::ostream &out, uint16_t indent = 0);
@@ -99,23 +99,23 @@ class RsNetExampleDataItem: public RsNetExampleItem
 };
 
 
-class RsNetExampleSerialiser: public RsSerialType
+class RsWebViewSerialiser: public RsSerialType
 {
 	public:
-		RsNetExampleSerialiser()
-			:RsSerialType(RS_PKT_VERSION_SERVICE, RS_SERVICE_TYPE_NetExample_PLUGIN)
+		RsWebViewSerialiser()
+			:RsSerialType(RS_PKT_VERSION_SERVICE, RS_SERVICE_TYPE_WebView_PLUGIN)
 		{ 
 		}
-		virtual ~RsNetExampleSerialiser() {}
+		virtual ~RsWebViewSerialiser() {}
 
 		virtual uint32_t 	size (RsItem *item) 
 		{ 
-			return dynamic_cast<RsNetExampleItem *>(item)->serial_size() ;
+			return dynamic_cast<RsWebViewItem *>(item)->serial_size() ;
 		}
 
 		virtual	bool serialise  (RsItem *item, void *data, uint32_t *size)
 		{ 
-			return dynamic_cast<RsNetExampleItem *>(item)->serialise(data,*size) ;
+			return dynamic_cast<RsWebViewItem *>(item)->serialise(data,*size) ;
 		}
 		virtual	RsItem *deserialise(void *data, uint32_t *size);
 };

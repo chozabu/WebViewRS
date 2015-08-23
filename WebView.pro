@@ -3,8 +3,11 @@
 greaterThan(QT_MAJOR_VERSION, 4) {
 	# Qt 5
 	QT += widgets
+	QT += webkitwidgets
 }
 
+QT += webkit
+QT += network
 exists($$[QMAKE_MKSPECS]/features/mobility.prf) {
   CONFIG += mobility
 } else {
@@ -33,29 +36,35 @@ win32 {
 
 QMAKE_CXXFLAGS *= -Wall
 
-SOURCES = NetExamplePlugin.cpp               \
-          services/p3NetExample.cc           \
-          services/rsNetExampleItems.cc \
-    gui/NetExampleMainpage.cpp \
-    gui/NetExampleNotify.cpp \
-    gui/paintwidget.cpp
+SOURCES = WebViewPlugin.cpp               \
+          services/p3WebView.cc           \
+          services/rsWebViewItems.cc \
+    gui/WebViewMainpage.cpp \
+    gui/WebViewNotify.cpp \
+    gui/webenginepagepanel.cpp \
+    gui/webviewrs.cpp \
+    gui/webtabcontents.cpp
 
-HEADERS = NetExamplePlugin.h                 \
-          services/p3NetExample.h            \
-          services/rsNetExampleItems.h       \
-          interface/rsNetExample.h \
-    gui/NetExampleMainpage.h \
-    gui/NetExampleNotify.h \
-    gui/paintwidget.h
+HEADERS = WebViewPlugin.h                 \
+          services/p3WebView.h            \
+          services/rsWebViewItems.h       \
+          interface/rsWebView.h \
+    gui/WebViewMainpage.h \
+    gui/WebViewNotify.h \
+    gui/webenginepagepanel.h \
+    gui/webviewrs.h \
+    gui/webtabcontents.h
 
 #FORMS   = gui/AudioInputConfig.ui
 
-TARGET = NetExample
+TARGET = WebView
 
-RESOURCES = gui/NetExample_images.qrc
+RESOURCES = gui/WebView_images.qrc
 
 
 LIBS += -lspeex -lspeexdsp
 
 FORMS += \
-    gui/NetExampleMainpage.ui
+    gui/WebViewMainpage.ui \
+    gui/webenginepagepanel.ui \
+    gui/webtabcontents.ui

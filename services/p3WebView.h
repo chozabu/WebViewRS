@@ -26,15 +26,15 @@
 #include <string>
 #include <QVariantMap>
 
-#include "services/rsNetExampleItems.h"
+#include "services/rsWebViewItems.h"
 #include "services/p3service.h"
 #include "serialiser/rstlvbase.h"
 #include "serialiser/rsconfigitems.h"
 #include "plugins/rspqiservice.h"
-#include <interface/rsNetExample.h>
+#include <interface/rsWebView.h>
 
 class p3LinkMgr;
-class NetExampleNotify ;
+class WebViewNotify ;
 
 
 
@@ -44,14 +44,14 @@ class NetExampleNotify ;
   * This is only used to test Latency for the moment.
   */
 
-class p3NetExample: public RsPQIService, public RsNetExample
+class p3WebView: public RsPQIService, public RsWebView
 // Maybe we inherit from these later - but not needed for now.
 //, public p3Config, public pqiMonitor
 {
 	public:
-		p3NetExample(RsPluginHandler *cm,NetExampleNotify *);
+		p3WebView(RsPluginHandler *cm,WebViewNotify *);
 
-		/***** overloaded from rsNetExample *****/
+		/***** overloaded from rsWebView *****/
 
 
 		/***** overloaded from p3Service *****/
@@ -78,13 +78,12 @@ class p3NetExample: public RsPQIService, public RsNetExample
 		 */
 		virtual bool saveList(bool& cleanup, std::list<RsItem*>&) ;
 		virtual bool loadList(std::list<RsItem*>& load) ;
-		virtual std::string configurationFileName() const { return "NetExample.cfg" ; }
+		virtual std::string configurationFileName() const { return "WebView.cfg" ; }
 
 		virtual RsServiceInfo getServiceInfo() ;
 
 		void 	ping_all();
 
-		void broadcast_paint(int x, int y);
 		void 	msg_all(std::string msg);
 		void str_msg_peer(RsPeerId peerID, QString strdata);
 		void raw_msg_peer(RsPeerId peerID, std::string msg);
@@ -93,9 +92,9 @@ private:
 
 
 
-		void handleData(RsNetExampleDataItem*) ;
+		void handleData(RsWebViewDataItem*) ;
 
-		RsMutex mNetExampleMtx;
+		RsMutex mWebViewMtx;
 
 
 		static RsTlvKeyValue push_int_value(const std::string& key,int value) ;
@@ -103,6 +102,6 @@ private:
 
 
 		RsServiceControl *mServiceControl;
-		NetExampleNotify *mNotify ;
+		WebViewNotify *mNotify ;
 
 };

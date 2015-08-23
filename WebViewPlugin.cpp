@@ -27,15 +27,15 @@
 #include <QIcon>
 #include <QMessageBox>
 
-#include "NetExamplePlugin.h"
-#include "interface/rsNetExample.h"
-#include "gui/NetExampleMainpage.h"
-#include "gui/NetExampleNotify.h"
+#include "WebViewPlugin.h"
+#include "interface/rsWebView.h"
+#include "gui/WebViewMainpage.h"
+#include "gui/WebViewNotify.h"
 
 
-#define IMAGE_NetExample ":/images/talking_on.svg"
+#define IMAGE_WebView ":/images/talking_on.svg"
 
-static void *inited = new NetExamplePlugin() ;
+static void *inited = new WebViewPlugin() ;
 
 extern "C" {
 
@@ -46,7 +46,7 @@ extern "C" {
 	//
 	void *RETROSHARE_PLUGIN_provide()
 	{
-		static NetExamplePlugin *p = new NetExamplePlugin() ;
+		static WebViewPlugin *p = new WebViewPlugin() ;
 
 		return (void*)p ;
 	}
@@ -64,7 +64,7 @@ extern "C" {
 	uint32_t RETROSHARE_PLUGIN_api = RS_PLUGIN_API_VERSION ;
 }
 
-void NetExamplePlugin::getPluginVersion(int& major, int& minor, int& build, int& svn_rev) const
+void WebViewPlugin::getPluginVersion(int& major, int& minor, int& build, int& svn_rev) const
 {
 	major = RS_MAJOR_VERSION ;
 	minor = RS_MINOR_VERSION ;
@@ -72,25 +72,25 @@ void NetExamplePlugin::getPluginVersion(int& major, int& minor, int& build, int&
 	svn_rev = RS_REVISION_NUMBER ;
 }
 
-NetExamplePlugin::NetExamplePlugin()
+WebViewPlugin::WebViewPlugin()
 {
 	qRegisterMetaType<RsPeerId>("RsPeerId");
 	mainpage = NULL ;
-	mNetExample = NULL ;
+	mWebView = NULL ;
 	mPlugInHandler = NULL;
 	mPeers = NULL;
 	config_page = NULL ;
 	mIcon = NULL ;
 
-	mNetExampleNotify = new NetExampleNotify;
+	mWebViewNotify = new WebViewNotify;
 }
 
-void NetExamplePlugin::setInterfaces(RsPlugInInterfaces &interfaces)
+void WebViewPlugin::setInterfaces(RsPlugInInterfaces &interfaces)
 {
     mPeers = interfaces.mPeers;
 }
 
-/*ConfigPage *NetExamplePlugin::qt_config_page() const
+/*ConfigPage *WebViewPlugin::qt_config_page() const
 {
 	// The config pages are deleted when config is closed, so it's important not to static the
 	// created object.
@@ -98,7 +98,7 @@ void NetExamplePlugin::setInterfaces(RsPlugInInterfaces &interfaces)
 	return new AudioInputConfig() ;
 }*/
 
-QDialog *NetExamplePlugin::qt_about_page() const
+QDialog *WebViewPlugin::qt_about_page() const
 {
 	static QMessageBox *about_dialog = NULL ;
 	
@@ -107,11 +107,11 @@ QDialog *NetExamplePlugin::qt_about_page() const
 		about_dialog = new QMessageBox() ;
 
 		QString text ;
-		text += QObject::tr("<h3>RetroShare NetExample plugin</h3><br/>   * Contributors: Cyril Soler, Josselin Jacquard<br/>") ;
-		text += QObject::tr("<br/>The NetExample plugin adds NetExample to the private chat window of RetroShare. to use it, proceed as follows:<UL>") ;
+		text += QObject::tr("<h3>RetroShare WebView plugin</h3><br/>   * Contributors: Cyril Soler, Josselin Jacquard<br/>") ;
+		text += QObject::tr("<br/>The WebView plugin adds WebView to the private chat window of RetroShare. to use it, proceed as follows:<UL>") ;
 		text += QObject::tr("<li> setup microphone levels using the configuration panel</li>") ;
 		text += QObject::tr("<li> check your microphone by looking at the VU-metters</li>") ;
-		text += QObject::tr("<li> in the private chat, enable sound input/output by clicking on the two NetExample icons</li></ul>") ;
+		text += QObject::tr("<li> in the private chat, enable sound input/output by clicking on the two WebView icons</li></ul>") ;
 		text += QObject::tr("Your friend needs to run the plugin to talk/listen to you, or course.") ;
 		text += QObject::tr("<br/><br/>This is an experimental feature. Don't hesitate to send comments and suggestion to the RS dev team.") ;
 
@@ -122,11 +122,11 @@ QDialog *NetExamplePlugin::qt_about_page() const
 	return about_dialog ;
 }
 
-/*ChatWidgetHolder *NetExamplePlugin::qt_get_chat_widget_holder(ChatWidget *chatWidget) const
+/*ChatWidgetHolder *WebViewPlugin::qt_get_chat_widget_holder(ChatWidget *chatWidget) const
 {
 	switch (chatWidget->chatType()) {
 	case ChatWidget::CHATTYPE_PRIVATE:
-		return new NetExampleChatWidgetHolder(chatWidget, mNetExampleNotify);
+		return new WebViewChatWidgetHolder(chatWidget, mWebViewNotify);
 	case ChatWidget::CHATTYPE_UNKNOWN:
 	case ChatWidget::CHATTYPE_LOBBY:
 	case ChatWidget::CHATTYPE_DISTANT:
@@ -136,63 +136,63 @@ QDialog *NetExamplePlugin::qt_about_page() const
 	return NULL;
 }*/
 
-p3Service *NetExamplePlugin::p3_service() const
+p3Service *WebViewPlugin::p3_service() const
 {
-	if(mNetExample == NULL)
-		rsNetExample = mNetExample = new p3NetExample(mPlugInHandler,mNetExampleNotify) ; // , 3600 * 24 * 30 * 6); // 6 Months
+	if(mWebView == NULL)
+		rsWebView = mWebView = new p3WebView(mPlugInHandler,mWebViewNotify) ; // , 3600 * 24 * 30 * 6); // 6 Months
 
-	return mNetExample ;
+	return mWebView ;
 }
 
-void NetExamplePlugin::setPlugInHandler(RsPluginHandler *pgHandler)
+void WebViewPlugin::setPlugInHandler(RsPluginHandler *pgHandler)
 {
     mPlugInHandler = pgHandler;
 }
 
-QIcon *NetExamplePlugin::qt_icon() const
+QIcon *WebViewPlugin::qt_icon() const
 {
 	if (mIcon == NULL) {
-		Q_INIT_RESOURCE(NetExample_images);
+		Q_INIT_RESOURCE(WebView_images);
 
-		mIcon = new QIcon(IMAGE_NetExample);
+		mIcon = new QIcon(IMAGE_WebView);
 	}
 
 	return mIcon;
 }
-MainPage *NetExamplePlugin::qt_page() const
+MainPage *WebViewPlugin::qt_page() const
 {
 	if(mainpage == NULL){
-		mainpage = new NetExampleMainpage(0, mNetExampleNotify);//mPeers, mFiles) ;
-		//tpage = new NetExampleMainpage( );
+		mainpage = new WebViewMainpage(0, mWebViewNotify);//mPeers, mFiles) ;
+		//tpage = new WebViewMainpage( );
 		//mainpage = tpage;
 	}
 
 	return mainpage ;
 }
 
-std::string NetExamplePlugin::getShortPluginDescription() const
+std::string WebViewPlugin::getShortPluginDescription() const
 {
-	return "NetExample";
+	return "WebView";
 }
 
-std::string NetExamplePlugin::getPluginName() const
+std::string WebViewPlugin::getPluginName() const
 {
-	return "NetExamplePlugin";
+	return "WebViewPlugin";
 }
 
-QTranslator* NetExamplePlugin::qt_translator(QApplication */*app*/, const QString& languageCode, const QString& externalDir) const
+QTranslator* WebViewPlugin::qt_translator(QApplication */*app*/, const QString& languageCode, const QString& externalDir) const
 {
 	return NULL;
 }
 
-void NetExamplePlugin::qt_sound_events(SoundEvents &/*events*/) const
+void WebViewPlugin::qt_sound_events(SoundEvents &/*events*/) const
 {
-//	events.addEvent(QApplication::translate("NetExample", "NetExample"), QApplication::translate("NetExample", "Incoming call"), NetExample_SOUND_INCOMING_CALL);
+//	events.addEvent(QApplication::translate("WebView", "WebView"), QApplication::translate("WebView", "Incoming call"), WebView_SOUND_INCOMING_CALL);
 }
 
-/*ToasterNotify *NetExamplePlugin::qt_toasterNotify(){
-	if (!mNetExampleToasterNotify) {
-		mNetExampleToasterNotify = new NetExampleToasterNotify(mNetExample, mNetExampleNotify);
+/*ToasterNotify *WebViewPlugin::qt_toasterNotify(){
+	if (!mWebViewToasterNotify) {
+		mWebViewToasterNotify = new WebViewToasterNotify(mWebView, mWebViewNotify);
 	}
-	return mNetExampleToasterNotify;
+	return mWebViewToasterNotify;
 }*/

@@ -1,3 +1,4 @@
+/* this is a simple class to make it easy for any part of the plugin to call its services */
 /****************************************************************
  *  RetroShare is distributed under the following license:
  *
@@ -19,32 +20,39 @@
  *  Boston, MA  02110-1301, USA.
  ****************************************************************/
 
-// This class is a Qt object to get notification from the plugin's service threads,
-// and responsible to pass the info the the GUI part.
+// interface class for p3WebView service
 //
-// Because the GUI part is async-ed with the service, it is crucial to use the
-// QObject connect system to communicate between the p3Service and the gui part (handled by Qt)
-//
-#ifndef NETEXAMPLENOTIFY_H
-#define NETEXAMPLENOTIFY_H
 
+#pragma once
+
+#include <stdint.h>
+#include <string>
+#include <list>
+#include <vector>
 #include <retroshare/rstypes.h>
 
-#include <QObject>
+class RsWebView ;
+extern RsWebView *rsWebView;
+ 
+//TODO explain this const
+static const uint32_t CONFIG_TYPE_WebView_PLUGIN 		= 0xe001 ;
 
-class NetExampleNotify : public QObject
+class RsWebView
 {
-	Q_OBJECT
-public:
-	explicit NetExampleNotify(QObject *parent = 0);
-	void notifyReceivedPaint(const RsPeerId &peer_id, int x, int y) ;
-	void notifyReceivedMsg(const RsPeerId &peer_id, QString str) ;
+	public:
 
-signals:
-	void NeMsgArrived(const RsPeerId &peer_id, QString str) ; // emitted when the peer gets a msg
-	void NePaintArrived(const RsPeerId &peer_id, int x, int y) ;
+	//not fully implemented
+	virtual void ping_all() = 0;
 
-public slots:
+	//broadcasts json packets with some text coords for chatting
+	virtual void msg_all(std::string msg) = 0;
+
+	//send data to a peer using your own serialisation
+	virtual void raw_msg_peer(RsPeerId peerID, std::string msg) = 0;
+
+	//convenience functions
+	//virtual void str_msg_peer(RsPeerId peerID, QString strdata) = 0;
+	//virtual void 	qvm_msg_peer(RsPeerId peerID, QVariantMap data) = 0;
 };
 
-#endif // NETEXAMPLENOTIFY_H
+
