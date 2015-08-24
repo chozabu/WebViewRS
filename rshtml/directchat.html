@@ -1,0 +1,66 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<link rel="stylesheet" href="ct.css" type="text/css">
+  <meta name="generator" content=
+  "HTML Tidy for Linux/x86 (vers 25 March 2009), see www.w3.org" />
+
+  <title>Direct Chat</title>
+  <script src="three.min.js"></script>
+  <script type="text/javascript">
+  var peerID = getUrlVars()["peerid"];
+  //peerID = peerID.substr(1,peerID.length-2);
+  
+  function processPacket(packet){
+      var packetdata = JSON.parse(packet.message);
+      if (packetdata["type"] == "chat"){
+        var text = packetdata["msg"];
+        var newPanel=packet.peerName+" says:<br/>"+text+"<br/>";
+        newPanel="<p class='PIPanel'>"+newPanel+"</p>";
+        document.getElementById("chatout").innerHTML+= newPanel;
+       }
+  }
+  function submitChat()
+  {
+      var input = document.getElementById('chatInput'),
+          msg = input.value;
+    var packetdata = {"type":"chat","msg":msg};
+    bridge.sendMessage(peerID, JSON.stringify(packetdata));
+    var newPanel="You say:<br/>"+msg+"<br/>";
+    newPanel="<p class='PIPanelOdd'>"+newPanel+"</p>";
+    document.getElementById("chatout").innerHTML+= newPanel;
+    input.value = "";
+  }
+  bridge.msgPush.connect(incomingMsg);
+  function incomingMsg(message){
+    processPacket(message);
+   }
+  
+  function getUrlVars() {
+    var vars = {};
+    var parts = window.location.href.replace(/[?&]+([^=&]+)=([^&]*)/gi, function(m,key,value) {
+        vars[key] = value;
+    });
+    return vars;
+}
+
+  </script>
+</head>
+
+<body>
+  <p>
+  <a href="index.html">Back to index</a></p>
+  <p id="demo"></p>
+  Chat:
+  <p id="chatout"></p>
+    <input name="chatInput" id="chatInput" type="text" /> <button onclick=
+    "submitChat()">Submit Message</button>
+    
+    
+    <script>
+    document.getElementById("chatout").innerHTML+="talking to: "+peerID+"<br/>";
+    </script>
+    
+    
+    
+</body>
+</html>

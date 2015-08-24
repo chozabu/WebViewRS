@@ -1,0 +1,43 @@
+<html><head><title>Index</title>
+<link rel="stylesheet" href="ct.css" type="text/css">
+</head><body>
+<a href="index.html">Back to Index</a><br/>
+<input name="chatInput" id="chatInput" type="text" onkeypress="return chatKeyDown(event)" />
+<button onclick="submitChat()">Submit Message</button><br>
+Feed:
+<p id="chatout"></p>
+<script>
+  var chatout = document.getElementById("chatout");
+
+   function chatKeyDown(e) {
+       if (e.keyCode == 13) {
+            submitChat();
+           return false;
+       }
+   }
+  function submitChat()
+  {
+    var post = {"text":chatInput.value,
+                "peerid":bridge.getOwnId(),
+                "peerName":bridge.getPeerName(bridge.getOwnId()),
+                "time":Date.now()
+                }
+    var packetdata = {"type":"microblog","msg":post};
+    addPostToFeed(post);
+    bridge.broadcastMessage(JSON.stringify(packetdata));
+  }
+  function addPostToFeed(post){
+    var newPanel = post.peerName+": "+post.text+" @"+post.time;
+    newPanel="<p class='PIPanel'>"+newPanel+"</p>";
+    chatout.innerHTML= newPanel+chatout.innerHTML;
+    chatInput.value = "";
+  }
+  bridge.msgPush.connect(incomingMsg);
+  function incomingMsg(packet){
+      var packetdata = JSON.parse(packet.message);
+      if (packetdata["type"] == "microblog"){
+        var post = packetdata["msg"];
+        addPostToFeed(post);
+      }
+   }
+</script></body></html>

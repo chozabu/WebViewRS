@@ -1,0 +1,422 @@
+<html><head><title>Index</title>
+<style>
+
+.node {
+  stroke: #fff;
+  stroke-width: 1.5px;
+}
+
+.link {
+  stroke: #999;
+  stroke-opacity: .6;
+}
+
+</style>
+<link rel="stylesheet" href="ct.css" type="text/css">
+</head><body>
+<a href="index.html">Back to Index</a><br/>
+Filter:<input name="filterInput" id="filterInput" type="text"  onkeyup="return filterKeyUp(event)" />
+<div id="foflink"></div>
+linkStrength<input id="linkStrength" type="number" value="0.5" onkeyup="return fNumsKeyUp(event)"></input>
+ charge:<input id="charge" type="number" value="-300" onkeyup="return fNumsKeyUp(event)"></input>
+ linkDistance:<input id="linkDistance" type="number" value="100" onkeyup="return fNumsKeyUp(event)"></input>
+<div id="mapDiv"></div>
+<p id="downloadEle"></p>
+The below functions should be run automatically<br>
+Peer Map - export
+<button onclick="return dumpConnections();">dump my peers</button> this will dump your peer fingerprint list to a file in your downloads directory (which is hopefully shared in some way)<br>
+Try refreshing after dumping your peer list - may need to wait/force a RS file check<br>
+<button onclick="downloadMore()">Download Data</button> download friends lists<br>
+
+
+<script src="zepto.min.js"></script>
+
+<script src="d3.v3.min.js"></script>
+<script src="libsha512.js"></script>
+<script>
+
+var color = d3.scale.category20();
+var showfof = getUrlVars()["showfof"];
+var linkStrength = document.getElementById('linkStrength');
+var charge = document.getElementById('charge');
+var linkDistance = document.getElementById('linkDistance');
+var downloadEle = document.getElementById('downloadEle');
+var foflink = document.getElementById('foflink');
+if (showfof)
+  foflink.innerHTML = "<a href='fdgraph.html'>hide FOF</a>"
+else
+  foflink.innerHTML = "<a href='fdgraph.html?showfof=true'>show FOF</a>"
+var mapDiv = document.getElementById('mapDiv');
+var filterInput = document.getElementById('filterInput')
+function dsHash(data){
+    var shaObj = new jsSHA(data, "TEXT");
+    return shaObj.getHash("SHA-512", "HEX").substr(0,20);
+    //return hashlib.sha512(data).hexdigest()[0:20]
+}
+function dhHashId(Id){
+    fi=bridge.getPeerDetails(Id);
+    return dsHash(dsHash(fi['gpg_id'])+dsHash(fi['name']));
+    }
+var myOwnHash = dhHashId(bridge.getOwnId());
+var friendIds = bridge.getGPGAllList();
+var friendHashs = {};
+$.each(friendIds, function(key, value){
+  friendHashs[dhHashId(value)]=value;
+})
+
+
+var dfriendIds = bridge.getFriendList();
+var dfriendHashs = {};
+$.each(dfriendIds, function(key, value){
+  dfriendHashs[dhHashId(value)]=value;
+})
+
+console.log(myOwnHash)
+var width = 1360,
+    height = 900;
+
+var color = d3.scale.category20();
+
+var force = d3.layout.force()
+    //.charge(30)
+    .size([width, height]);
+
+var svg = d3.select("body").select("div#mapDiv").append("svg")
+    .attr("width", width)
+    .attr("height", height);
+
+var gnodes;
+
+
+var links = [];
+var nodes = [];
+var nodesDict = {}
+var handledCount = 0;
+
+function fNumsKeyUp(){
+
+  force
+      .linkStrength(linkStrength.value)
+      .charge(charge.value)
+      .linkDistance(linkDistance.value)
+      .start();
+  }
+function filterKeyUp(){
+  searchFor(filterInput.value);
+  }
+
+function chartFromLocalSearch(){
+  
+  //this ajax reading should be replaced by making sure files made with writeString are indexed.
+  var directFriendIds = bridge.getFriendList();
+  $.each(directFriendIds, function(key, value){
+    var gpgid = bridge.getGPGId(value);
+    var fofs = bridge.getDiscGPGFriends(gpgid);
+    //console.log(fofs);
+    //friendHashs[dhHashId(value)]=value;
+    var dumplist=[];
+    $.each(fofs, function(innerkey, innervalue){
+        dumplist.push(dhHashId(bridge.getGPGId(innervalue)));
+    })
+    //todump['contactHashes']=dumplist;
+    todump = {};
+    todump.ownHash = dhHashId(gpgid);
+    todump.contactHashes = dumplist;
+    //console.log(todump);
+    if(showfof)
+      handleFileInternal(todump);//use this for full local map
+    else
+      handleFofInternal(todump);
+  })
+  
+  
+  searchOptions = {"localindexed":true,"remoteindexed":false,"boolexp":false};
+  var sresult = bridge.searchKeywords("global-peer-map-from", searchOptions);
+  //console.log(JSON.stringify(sresult))
+  var results = sresult.results;
+
+  filesList = []
+  for (r in results){
+    filesList.push(results[r].fullpath + "/" + results[r].srname);
+  }
+  
+  searchOptions = {"localindexed":true,"remoteindexed":false,"boolexp":false};
+  var sresult = bridge.searchKeywords("global-peer-map-fof-of", searchOptions);
+  //console.log(JSON.stringify(sresult))
+  var results = sresult.results;
+
+  for (r in results){
+    filesList.push(results[r].fullpath + "/" + results[r].srname);
+  }
+  handledCount = 0;
+  for (f in filesList){
+    $.getJSON(filesList[f], handleFile)
+  }
+}
+function dumpFoFConnections(){
+  
+  var directFriendIds = bridge.getFriendList();
+  $.each(directFriendIds, function(key, value){
+    var gpgid = bridge.getGPGId(value);
+    var fofs = bridge.getDiscGPGFriends(gpgid);
+    //console.log(fofs);
+    //friendHashs[dhHashId(value)]=value;
+    var dumplist=[];
+    $.each(fofs, function(innerkey, innervalue){
+        dumplist.push(dhHashId(bridge.getGPGId(innervalue)));
+    })
+    //todump['contactHashes']=dumplist;
+    todump = {};
+    todump.ownHash = dhHashId(gpgid);
+    todump.contactHashes = dumplist;
+    //console.log(todump);
+  var dumpdata = JSON.stringify(todump);
+  console.log("Writing data: "+dumpdata);
+  var outfile = "/global-peer-map-fof-of-"+dhHashId(todump.ownHash)+".json";
+  console.log("to: "+outfile);
+  bridge.writeString(outfile, dumpdata);
+    
+  })
+}
+
+function dumpConnections(){
+    var fl=bridge.getFriendList()
+    var dumplist=[];
+    $.each(fl, function(innerkey, innervalue){
+        dumplist.push(dhHashId(bridge.getGPGId(innervalue)));
+    })
+    //todump['contactHashes']=dumplist;
+    todump = {};
+    todump.ownHash = myOwnHash;
+    todump.contactHashes = dumplist;
+    todump.alias = "anon";//this needs replacing
+
+  var dumpdata = JSON.stringify(todump);
+  console.log("Writing data: "+dumpdata);
+  var outfile = "/global-peer-map-from-"+dhHashId(bridge.getOwnId())+".json";
+  console.log("to: "+outfile);
+  bridge.writeString(outfile, dumpdata);
+  console.log("CALLED writeString");
+}
+
+function ownFileNotFound(){
+        console.log("own file not found - generating");
+        //bridge.runPythonFile('python/dumpanonconnections.py')
+        dumpConnections();
+        //downloadMore();
+        window.alert("first run - wait a little for info to gather, and refresh");
+}
+
+var fname =bridge.getDownloadDirectory()+"/global-peer-map-from-"+myOwnHash+".json";
+console.log(fname);
+$.ajax({
+    url:fname,
+    dataType: "json",
+    error: function(asd)
+    {
+    ownFileNotFound();
+    },
+    success: function(asd)
+    {
+        if (asd == null)
+          ownFileNotFound();
+        else{
+          console.log("Own file found");
+          //console.log("done: "+JSON.stringify(asd));
+          handleFileInternal(asd);
+          downloadMore();
+          chartFromLocalSearch();
+        }
+    }
+});
+
+
+function checkAddNode(hash){
+  if (!nodesDict.hasOwnProperty(hash)){
+    var newDict = {}
+    if(hash==myOwnHash)name="ME";
+    if(friendHashs.hasOwnProperty(hash)){
+      newDict.name=bridge.getPeerName(friendHashs[hash]);
+      //var imgPanel = document.createElement("img");
+      if (dfriendHashs.hasOwnProperty(hash)){
+        newDict.pic = bridge.getAvatarDetails(friendHashs[hash]).toDataUrl();//.assignTo(imgPanel);
+        console.log(newDict.pic);
+      } else if (hash == myOwnHash)
+        newDict.pic = bridge.getAvatarDetails(bridge.getOwnId()).toDataUrl();//.assignTo(imgPanel);
+      //finalPanel.insertBefore(imgPanel, finalPanel.firstChild);
+    } else {
+      newDict.name = hash.substr(0,5);
+    }
+    nodes.push(newDict);
+    nodesDict[hash]=newDict;
+    }
+  return nodesDict[hash]
+}
+function handleFileInternal(graph){
+//console.log(graph)
+//graph.links = [];
+var ownindex =checkAddNode(graph.ownHash);
+var lcol = 0;
+if(graph.ownHash==myOwnHash)lcol=1;
+for (var l = 0;l <graph.contactHashes.length;l++){
+  var otherindex = checkAddNode(graph.contactHashes[l])
+  //console.log(ownindex+" : "+otherindex)
+  if(ownindex!=otherindex)
+  links.push({"source":ownindex,"target":otherindex, "colour":lcol});
+  }
+}
+
+
+function checkNode(hash){
+  if (!nodesDict.hasOwnProperty(hash)){
+    return false;
+    }
+  return nodesDict[hash]
+}
+function handleFofInternal(graph){
+var ownindex =checkNode(graph.ownHash);
+if (ownindex == false)return;
+for (var l = 0;l <graph.contactHashes.length;l++){
+  var otherindex = checkNode(graph.contactHashes[l])
+  if (otherindex == false)continue;
+  if(ownindex!=otherindex)
+  links.push({"source":ownindex,"target":otherindex, "colour":0});
+  }
+}
+
+function handleFile(graph){
+  handleFileInternal(graph)
+  handledCount+=1;
+  if(handledCount>=filesList.length)doGraph();
+}
+function doGraph(){
+
+  force
+      .nodes(nodes)
+      .links(links)
+      .linkStrength(linkStrength.value)
+      .charge(charge.value)
+      .linkDistance(linkDistance.value)
+      .start();
+  
+  var link = svg.selectAll(".link")
+      .data(links)
+    .enter().append("line")
+      .attr("class", "link")
+      //.style("stroke-width", function(d) { return d.width; })
+      .style("stroke", function(d) { return color(d.colour); });
+//color(d.group) //style="stroke: black;"
+  gnodes = svg.selectAll('g.gnode')
+  .data(nodes)
+  .enter()
+  .append('g')
+  .classed('gnode', true)
+  .call(force.drag);;
+  
+
+// Add one circle in each group
+var node = gnodes.append("circle")
+  .attr("class", "node")
+  .attr("r", 7)
+  .style("fill", function(d) { return color(6); })//d.group
+  .call(force.drag);
+  
+  
+  gnodes.on('mouseover', function(d) {
+  link.style('stroke-width', function(l) {
+    if (d === l.source || d === l.target)
+      return 4;
+    else
+      return 1;
+    });
+});
+
+// Append the labels to each group
+var labels = gnodes.append("text")
+  .attr("dx", 12)
+  .attr("dy", ".35em")
+  .text(function(d) { return d.name; });
+  
+  
+var pics = gnodes.append("svg:image")
+  .attr("xlink:href", function(d) { if(d.hasOwnProperty("pic")) return d.pic; })
+  .attr("x", -16)
+  .attr("y", -16)
+  .attr("width", 24)
+  .attr("height", 24);
+
+  //node.append("title")
+  //  .text(function(d) { return d.name; });
+
+  force.on("tick", function() {
+    link.attr("x1", function(d) { return d.source.x; })
+        .attr("y1", function(d) { return d.source.y; })
+        .attr("x2", function(d) { return d.target.x; })
+        .attr("y2", function(d) { return d.target.y; });
+
+  // Translate the groups
+  gnodes.attr("transform", function(d) { 
+    return 'translate(' + [d.x, d.y] + ')'; 
+  });    
+  });
+}
+
+function searchFor(inText){
+  var allC = svg.selectAll('circle')[0];
+  var allT = svg.selectAll('text')[0];
+  inText = inText.toLowerCase();
+  for (var i in allT){
+    var text = allT[i];
+    newRad = 5;
+    if(inText.length == 0)r=7;
+    else if (text.textContent.toLowerCase().indexOf(inText) != -1) newRad = 12;
+    allC[i].setAttribute("r",newRad);
+  }
+}
+
+function downloadMore(){
+  searchOptions = {"localindexed":false,"remoteindexed":true,"turtle":true,"boolexp":false};
+  var sresult = bridge.searchKeywords("global-peer-map-from", searchOptions);
+  var results = sresult.results;
+  downloadEle.innerHTML = ""
+  for (var i in results){
+    
+        var qname = results[i].srname;
+        var qsize = results[i].size;
+        var qhash = results[i].hash;
+    var result = bridge.downloadFile(qname, qhash, qsize);
+    if (result.status != "downloaded"){
+    downloadEle.innerHTML+="Downloading: "+qname+"<br>";
+      //var finalpath = getFinalPath(result.path, result.fname);
+    }
+    
+  }
+  if(downloadEle.innerHTML == "")
+    downloadEle.innerHTML = "No New Peers found in index - please wait for turtle search<br>"
+  else
+    downloadEle.innerHTML += "Downloading new! please refresh when downloads complete<br>"
+}
+
+bridge.rsTurtleResult.connect(rsTurtleResult);
+function rsTurtleResult(result){
+  //console.log("running turtleresult");
+  //console.log(result);
+  if (result.name.substr(0,20) == "global-peer-map-from" && result.status =="notdownloaded" ){
+    downloadEle.innerHTML += "Downloading: "+result.name+"<br>"
+    var result = bridge.downloadFile(result.name, result.hash, result.size);
+  }
+    
+}
+
+
+function getUrlVars() {
+  var vars = {};
+  var parts = window.location.href.replace(/[?&]+([^=&]+)=([^&]*)/gi, function(m,key,value) {
+      vars[key] = value;
+  });
+  return vars;
+}
+</script>
+
+</body>
+</html>

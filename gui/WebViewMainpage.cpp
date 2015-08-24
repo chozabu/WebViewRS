@@ -20,7 +20,7 @@ WebViewMainpage::WebViewMainpage(QWidget *parent, WebViewNotify *notify) :
 	connect(mNotify, SIGNAL(NeMsgArrived(RsPeerId,QString)), this , SLOT(NeMsgArrived(RsPeerId,QString)));
 	//ui->tabWidget->addTab(new WebViewPagePanel(), "Home");
 	WebTabContents * wtc = new WebTabContents(this);
-	//wtc->getWebView()->setUrl(QUrl(url));
+	wtc->getWebView()->setUrl(QUrl("qrc:/rshtml/index.html"));
 	ui->tabWidget->addTab(wtc,QString("WSRS"));
 
 }

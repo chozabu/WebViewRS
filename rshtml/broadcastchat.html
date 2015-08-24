@@ -1,0 +1,51 @@
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<link rel="stylesheet" href="ct.css" type="text/css">
+  <meta name="generator" content=
+  "HTML Tidy for Linux/x86 (vers 25 March 2009), see www.w3.org" />
+
+  <title>Broadcast Chat</title>
+  <script src="three.min.js"></script>
+  <script type="text/javascript">
+  function submitChat()
+  {
+    var input = document.getElementById('chatInput');
+    var packetdata = {"type":"chat","msg":input.value};
+    bridge.broadcastMessage(JSON.stringify(packetdata));
+    var newPanel = "you say:<br/>"+input.value+"<br/>";
+    newPanel="<p class='PIPanelOdd'>"+newPanel+"</p>";
+    document.getElementById("chatout").innerHTML+= newPanel;
+    input.value = "";
+  }
+  //bridge is defined in c++
+  bridge.msgPush.connect(incomingMsg);
+  function incomingMsg(packet){
+      var packetdata = JSON.parse(packet.message);
+      if (packetdata["type"] == "chat"){
+        var text = packetdata["msg"];
+        var newPanel=packet.peerName+" says:<br/>"+text+"<br/>";
+        newPanel="<p class='PIPanel'>"+newPanel+"</p>";
+        document.getElementById("chatout").innerHTML+= newPanel;
+      }
+   }
+   function chatKeyDown(e) {
+       if (e.keyCode == 13) {
+            submitChat();
+           return false;
+       }
+   }
+  </script>
+</head>
+
+<body>
+  <p><a href="index.html">Back to index</a></p>
+  <p id="demo"></p>
+  Chat:
+  <div id="chatout"></div>
+    <input name="chatInput" id="chatInput" type="text" onkeypress="return chatKeyDown(event)" /> <button onclick=
+    "submitChat()">Submit Message</button>
+
+</body>
+</html>

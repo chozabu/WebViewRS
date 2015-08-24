@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+<link rel="stylesheet" href="ct.css" type="text/css">
+    <title>three.js webgl - geometry - cube</title>
+    <meta charset="utf-8">
+    <style>
+        body {
+            margin: 0px;
+            background-color: #00000f;
+            overflow: hidden;
+        }
+    </style>
+</head>
+
+<body>
+
+    <script src="three.min.js"></script>
+    <script src="helvetiker_regular.typeface.js"></script>
+
+    <script>
+        var camera, scene, projector, renderer;
+        var camzpos = 400;
+        var campos = new THREE.Vector3(0,0,camzpos);
+        var textSize = 20;
+        var lineHeight = textSize + 15;
+        var container, info, inputMain;
+        var rootConversations = [];
+        var linelist = [];
+        var conversations = [];
+        var convDictID = {};
+        var mouse = {
+            x: 0,
+            y: 0
+        };
+        var material;
+
+        var nearestConv, selectedConv;
+        var nearestSphere, selectedSphere;
+        
+        var ownid = bridge.getOwnId();
+
+        init();
+        animate();
+
+        function preventevent(event) {
+            event.preventDefault();
+        }
+
+        function init() {
+
+
+            container = document.createElement('div');
+            document.body.appendChild(container);
+
+            var info = document.createElement('div');
+            info.style.position = 'absolute';
+            info.style.top = '10px';
+            info.style.width = '100%';
+            info.style.textAlign = 'center';
+            info.innerHTML = ' <a href="index.html">back to index</a>';
+            container.appendChild(info);
+
+            var inputMain = document.createElement('div');
+            inputMain.style.position = 'absolute';
+            inputMain.style.bottom = '10px';
+            inputMain.style.width = '100%';
+            inputMain.style.textAlign = 'center';
+            inputMain.innerHTML = '<input name="chatInput" id="chatInput" type="text"  onkeypress="return chatKeyDown(event)" /> <button onclick="submitChat()">Submit Message</button>';
+            container.appendChild(inputMain);
+
+            renderer = new THREE.WebGLRenderer();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
+
+            //
+
+            camera = new THREE.PerspectiveCamera(90, window.innerWidth / window.innerHeight, 1, 1000);
+            camera.position.z = camzpos;
+
+            x = camera;
+            y = camzpos;
+
+            //camera.position.y = 100;
+
+            scene = new THREE.Scene();
+
+            projector = new THREE.Projector();
+
+            //meshes
+            var smallsphere = new THREE.SphereGeometry(10, 10, 10);
+            material = new THREE.MeshLambertMaterial({
+                color: 0xdddddd,
+                shading: THREE.SmoothShading
+            });
+            nearestSphere = new THREE.Mesh(smallsphere, material);
+            scene.add(nearestSphere);
+
+
+            var smallsphere = new THREE.SphereGeometry(20, 20, 20);
+            var material = new THREE.MeshLambertMaterial({
+                color: 0xdddddd,
+                shading: THREE.SmoothShading
+            });
+            selectedSphere = new THREE.Mesh(smallsphere, material);
+            scene.add(selectedSphere);
+
+
+            //
+            // Lights
+
+            scene.add(new THREE.AmbientLight(0x111111));
+
+            var directionalLight = new THREE.DirectionalLight( /*Math.random() * */ 0xffffff, 0.425);
+
+            directionalLight.position.x = 0 - 0.5;
+            directionalLight.position.y = 0.5;
+            directionalLight.position.z = 0.5; //Math.random() - 0.5;
+
+            directionalLight.position.normalize();
+
+            scene.add(directionalLight);
+
+            pointLight = new THREE.PointLight(0xffffff, 1);
+            pointLight.position.x = 0;
+            pointLight.position.y = 0;
+            pointLight.position.z = 0;
+            //scene.add( pointLight );
+
+            window.addEventListener('resize', onWindowResize, false);
+            //window.addEventListener('keyup', onWindowKeyDown, false);
+            //window.addEventListener('keydown', onWindowKeyUp, false);
+
+
+
+            document.addEventListener('mousemove', onDocumentMouseMove, false);
+            renderer.domElement.addEventListener('mousedown', onDocumentMouseDown, false);
+            renderer.domElement.addEventListener('mouseup', onDocumentMouseUp, false);
+            
+            renderer.domElement.addEventListener("mousewheel", MouseWheelHandler, false);
+            // Firefox
+            //renderer.domElement.addEventListener("DOMMouseScroll", MouseWheelHandler, false);
+
+        }
+        
+        function MouseWheelHandler(event) {
+          if (event.wheelDeltaY>0)camera.position.z*=0.98;
+          else camera.position.z*=1.018;
+          //camera.position.z-=event.wheelDeltaY*0.1;
+          console.log(event);
+        }
+
+        function onWindowResize() {
+
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+
+            renderer.setSize(window.innerWidth, window.innerHeight);
+
+        }
+        var dragging = false;
+        function onWindowKeyDown(event) {
+            console.log(event);
+        }
+
+        function onWindowKeyUp(event) {
+
+        }
+
+        function findNearestConversation(x, y, shortestdist) {
+            if (conversations.length == 0) return null;
+            var nearest = null;
+            if (typeof (shortestdist) === 'undefined') shortestdist = 1000000000;
+            for (c in conversations) {
+                cc = conversations[c];
+                dx = cc.position.x - x;
+                dy = cc.position.y - y;
+                td = dx * dx + dy * dy;
+                if (td < shortestdist) {
+                    shortestdist = td;
+                    nearest = cc;
+                }
+            }
+            return nearest;
+        }
+
+        function animate() {
+
+            //mouseObjects = raycast(mouse.x, mouse.y);
+            //console.log(mouseObjects);
+            nearestConv = findNearestConversation(mouse.x, mouse.y,200 * 200);
+            var weight = 0.6;
+            var invWeight = 1.0-weight;
+            if (nearestConv) {
+                nearestSphere.position.x = nearestSphere.position.x * weight + nearestConv.position.x * invWeight;
+                nearestSphere.position.y = nearestSphere.position.y * weight + nearestConv.position.y * invWeight;
+            } else {
+                nearestSphere.position.x = nearestSphere.position.x * weight + mouse.x * invWeight;
+                nearestSphere.position.y = nearestSphere.position.y * weight + mouse.y * invWeight;
+            }
+            if (selectedConv) {
+                selectedSphere.position.x = selectedSphere.position.x * weight + selectedConv.position.x * invWeight;
+                selectedSphere.position.y = selectedSphere.position.y * weight + selectedConv.position.y * invWeight;
+            } else {
+                selectedSphere.position.x = selectedSphere.position.x * weight + mouse.x * invWeight;
+                selectedSphere.position.y = selectedSphere.position.y * weight + mouse.y * invWeight;
+            }
+            
+            for (var i = 0;i<100;i++){
+              if(conversations.length>4){
+              var ra =  parseInt(Math.random()*conversations.length);
+              var rb =  parseInt(Math.random()*conversations.length);
+              if(ra!=rb)
+              maintainDist(conversations[ra],conversations[rb],0.13,0.5,lineHeight*1.6,0.1);
+              var thisref = conversations[ra];
+              thisref.position.z-=0.02;
+              for (var cid in conversations[ra].replies){
+                var replyRef = conversations[ra].replies[cid];
+                
+                
+                replyRef.position.x=replyRef.position.x*0.99+thisref.position.x*0.01;
+                thisref.position.x=thisref.position.x*0.99+replyRef.position.x*0.01;
+                
+                replyRef.position.y=replyRef.position.y*0.99+(thisref.position.y-20)*0.01;
+                thisref.position.y=thisref.position.y*0.99+(replyRef.position.y+20)*0.01;
+              }
+              
+              var l = parseInt(Math.random()*linelist.length);
+              cl = linelist[l];
+              cl.geometry[0] = cl.refa.position;
+              cl.geometry[1] = cl.refb.position;
+              cl.geometry.verticesNeedUpdate = true;
+              }
+            }
+            
+            /*for (l in linelist){
+              cl = linelist[l];
+              console.log(cl.geometry[0]);
+              console.log(cl.refa.position);
+              cl.geometry[0] = cl.refa.position;
+              cl.geometry[1] = cl.refb.position;
+              cl.geometry.verticesNeedUpdate = true;
+             }*/
+             
+             camera.position.x=camera.position.x*0.8+campos.x*0.18+mouse.x*0.02;
+             camera.position.y=camera.position.y*0.8+campos.y*0.18+mouse.y*0.02;
+             
+             var selectedDiff = 1.5;
+             if (selectedConv){
+             selectedConv.scale.x*=selectedDiff;
+             selectedConv.scale.y*=selectedDiff;
+             selectedConv.scale.z*=selectedDiff;
+             }
+             if (nearestConv){
+             nearestConv.scale.x*=selectedDiff;
+             nearestConv.scale.y*=selectedDiff;
+             nearestConv.scale.z*=selectedDiff;
+             }
+            renderer.render(scene, camera);
+             if (selectedConv){
+             selectedConv.scale.x/=selectedDiff;
+             selectedConv.scale.y/=selectedDiff;
+             selectedConv.scale.z/=selectedDiff;
+             }
+             if (nearestConv){
+             nearestConv.scale.x/=selectedDiff;
+             nearestConv.scale.y/=selectedDiff;
+             nearestConv.scale.z/=selectedDiff;
+             }
+
+            setTimeout(nextFrame, 100);
+
+        }
+
+        function nextFrame() {
+            requestAnimationFrame(animate);
+        }
+        var buttonDown = false;
+        function onDocumentMouseDown(event) {
+            //event.preventDefault();
+            var wp = getWorldFromScreen(event);
+            console.log(event);
+            mouse.x = wp.x;
+            mouse.y = wp.y;
+            selectedConv = findNearestConversation(mouse.x, mouse.y, 200 * 200);
+            buttonDown = true;
+        }
+
+        function onDocumentMouseUp(event) {
+            //event.preventDefault();
+            
+            document.getElementById('chatInput').focus();
+            buttonDown = false;
+        }
+
+        function onDocumentMouseMove(event) {
+            event.preventDefault();
+            var ox = mouse.x;
+            var oy = mouse.y;
+            var wp = getWorldFromScreen(event);
+            mouse.x = wp.x;
+            mouse.y = wp.y;
+            if(event.shiftKey){
+              campos.x+=mouse.x-ox;
+              campos.y+=mouse.y-oy;
+            }
+            if(buttonDown && selectedConv){
+              selectedConv.position.x+=mouse.x-ox;
+              selectedConv.position.y+=mouse.y-oy;
+            }
+              
+            //mouse.x = event.clientX - window.innerWidth / 2;
+            //mouse.y = -(event.clientY - window.innerHeight / 2);
+
+        }
+        function getWorldFromScreen(event){
+          var vector = new THREE.Vector3(
+              ( event.clientX / window.innerWidth ) * 2 - 1,
+              - ( event.clientY / window.innerHeight ) * 2 + 1,
+              0.5 );
+
+          projector.unprojectVector( vector, camera );
+
+          var dir = vector.sub( camera.position ).normalize();
+
+          var distance = - camera.position.z / dir.z;
+
+          var pos = camera.position.clone().add( dir.multiplyScalar( distance ) );
+          return pos;
+        }
+
+        function raycast(x, y) {
+            var vector = new THREE.Vector3(x, y, 0.5);
+            projector.unprojectVector(vector, camera);
+
+            var raycaster = new THREE.Raycaster(camera.position, vector.sub(camera.position).normalize());
+
+            return raycaster.intersectObjects(scene.children);
+        }
+
+        function chatKeyDown(e) {
+            if (e.keyCode == 13) {
+                submitChat()
+                return false;
+            }
+        }
+        function maintainDist(a,b,strength,weight,desiredd,xstretch){
+                    if (xstretch == undefined)xstretch = 1;
+                    var xd = a.position.x-b.position.x;
+                    var yd = a.position.y-b.position.y;
+                    //zd = a.position.z-b.position.z;
+                    var td = xd*xd*xstretch+yd*yd;
+                    
+                    //desiredd = 60;
+                    if(td<desiredd*desiredd){
+                    var invWeight = (1-weight)*strength;
+                    weight*=strength;
+                    td = Math.sqrt(td);
+                      diffd = desiredd-td;
+                      xd/=td;
+                      yd/=td;
+                      a.position.x+=xd*diffd*weight;
+                      a.position.y+=yd*diffd*weight;
+                      b.position.x-=xd*diffd*invWeight;
+                      b.position.y-=yd*diffd*invWeight;
+                      }
+            }
+        function addText(text, parentID){
+        //console.log(parentID);
+                  for (conv in conversations){
+                  conversations[conv].z-=100;
+                  }
+        var words = createWords(text);
+        parent = convDictID[parentID];
+        //console.log(parent);
+            if (parent) {
+                words.position.x = parent.position.x-5+Math.random()*10;
+                words.position.y = parent.position.y - lineHeight-Math.random()*10;;
+                if (parent.replies.length>0){
+                  for (conv in conversations){
+                  conversations[conv].position.z-=10;
+                    maintainDist(words, conversations[conv],0.4,1,60);
+                  }
+                  //altwords.position.x-=xd*diffd;
+                  //altwords.position.y-=yd*diffd;
+                
+                }
+              var geometry = new THREE.Geometry();
+              geometry.vertices.push(words.position);//new THREE.Vector3(0,0,0));
+              geometry.vertices.push(parent.position);//.clone().sub(words.position));
+                var line = new THREE.Line(geometry, material);
+                line .refa = parent;
+                line.refb = words;
+                linelist.push(line);
+                scene.add(line);
+                parent.replies.push(words);
+            } else {
+                words.position.x = Math.random() * (window.innerWidth/2) - window.innerWidth / 4;
+                words.position.y = window.innerHeight / 2 - lineHeight;
+                rootConversations.push(words);
+            }
+            words.replies = [];
+            conversations.push(words);
+            return words;
+          }
+          
+        //bridge is defined in c++
+        bridge.msgPush.connect(incomingMsg);
+        function incomingMsg(packet){
+            var packetData = JSON.parse(packet.message);
+            if (packetData["type"] == "chat"){
+              //console.log("incoming originID is:"+packetData.originID);
+              //console.log(packetData);
+              if(convDictID[packetData.convID]){
+                console.log("DROPPING DUPE MESSAGE");
+                return;
+              }
+              var text = packetData["msg"];
+              var words = addText(packetData.msg,packetData.parentID);
+              words.convID = packetData.convID;
+              convDictID[words.convID] = words;
+              words.originID = packetData.originID;
+              console.log("new packet originID is"+words.originID);
+              //console.log(packetData.parentID +" vs " + ownid)
+              if(convDictID[packetData.parentID]==selectedConv){
+              selectedConv = words;
+              }
+              if(packetData.originID == ownid){
+              console.log("BROADCASTING REPLY MESSAGE");
+            bridge.broadcastMessage(JSON.stringify(packetData));
+            }
+              //document.getElementById("chatout").innerHTML+=packet.peerName+" says:<br/>"+text+"<br/>";
+            }
+        }
+        function submitChat() {
+            var input = document.getElementById('chatInput');
+            var packetData = {"type":"chat","msg":input.value};
+            var cid = undefined;
+            var originID = ownid;
+            if (selectedConv){
+              //console.log("selectedConv.originID="+selectedConv.originID);
+              cid=selectedConv.convID;
+              packetData.parentID = cid;
+              originID = selectedConv.originID;
+             }
+            var words = addText(input.value,cid);
+            words.convID = Math.random();
+            words.originID = originID;
+            convDictID[words.convID] = words;
+            packetData.convID = words.convID;
+            packetData.originID = originID;
+            if (originID != ownid){
+              //packetData.reBcast = "reply";
+              console.log("sending to:"+originID);
+              bridge.sendMessage(selectedConv.originID, JSON.stringify(packetData));
+            } else{
+            bridge.broadcastMessage(JSON.stringify(packetData));
+            }
+            selectedConv = words;
+            input.value = "";
+        }
+
+        function createWords(text) {
+            var words;
+            if (text[0]!=" "){
+            var shape = new THREE.TextGeometry(text, {
+                font: 'helvetiker',
+                curveSegments: 2,
+                size: textSize,
+                height: 5
+            });
+            var wrapper = new THREE.MeshNormalMaterial({
+                color: 0x00ff00
+            });
+            words = new THREE.Mesh(shape, wrapper);
+            }else{
+            words = makeTextSprite(text,{ fontsize: 32, fontface: "Georgia", borderColor: {r:0, g:0, b:255, a:1.0} });
+            }
+            scene.add(words);
+            return words;
+        }
+        
+        
+function makeTextSprite( message, parameters )
+{
+        if ( parameters === undefined ) parameters = {};
+        
+        var fontface = parameters.hasOwnProperty("fontface") ? 
+                parameters["fontface"] : "Arial";
+        
+        var fontsize = parameters.hasOwnProperty("fontsize") ? 
+                parameters["fontsize"] : 18;
+        
+        var borderThickness = parameters.hasOwnProperty("borderThickness") ? 
+                parameters["borderThickness"] : 4;
+        
+        var borderColor = parameters.hasOwnProperty("borderColor") ?
+                parameters["borderColor"] : { r:0, g:0, b:0, a:1.0 };
+        
+        var backgroundColor = parameters.hasOwnProperty("backgroundColor") ?
+                parameters["backgroundColor"] : { r:255, g:255, b:255, a:1.0 };
+
+        var spriteAlignment = THREE.SpriteAlignment.topLeft;
+                
+        var canvas = document.createElement('canvas');
+        var context = canvas.getContext('2d');
+        context.font = "Bold " + fontsize + "px " + fontface;
+    
+        // get size data (height depends only on font size)
+        var metrics = context.measureText( message );
+        var textWidth = metrics.width;
+        
+        // background color
+        context.fillStyle   = "rgba(" + backgroundColor.r + "," + backgroundColor.g + ","
+                                                                  + backgroundColor.b + "," + backgroundColor.a + ")";
+        // border color
+        context.strokeStyle = "rgba(" + borderColor.r + "," + borderColor.g + ","
+                                                                  + borderColor.b + "," + borderColor.a + ")";
+
+        context.lineWidth = borderThickness;
+        roundRect(context, borderThickness/2, borderThickness/2, textWidth + borderThickness, fontsize * 1.4 + borderThickness, 6);
+        // 1.4 is extra height factor for text below baseline: g,j,p,q.
+        
+        // text color
+        context.fillStyle = "rgba(0, 0, 0, 1.0)";
+
+        context.fillText( message, borderThickness, fontsize + borderThickness);
+        
+        // canvas contents will be used for a texture
+        var texture = new THREE.Texture(canvas) 
+        texture.needsUpdate = true;
+
+        var spriteMaterial = new THREE.SpriteMaterial( 
+                { map: texture, useScreenCoordinates: false, alignment: spriteAlignment } );
+        var sprite = new THREE.Sprite( spriteMaterial );
+        sprite.scale.set(100,50,1.0);
+        return sprite;  
+}
+
+// function for drawing rounded rectangles
+function roundRect(ctx, x, y, w, h, r) 
+{
+    ctx.beginPath();
+    ctx.moveTo(x+r, y);
+    ctx.lineTo(x+w-r, y);
+    ctx.quadraticCurveTo(x+w, y, x+w, y+r);
+    ctx.lineTo(x+w, y+h-r);
+    ctx.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
+    ctx.lineTo(x+r, y+h);
+    ctx.quadraticCurveTo(x, y+h, x, y+h-r);
+    ctx.lineTo(x, y+r);
+    ctx.quadraticCurveTo(x, y, x+r, y);
+    ctx.closePath();
+    ctx.fill();
+        ctx.stroke();   
+}
+    </script>
+
+</body>
+
+</html>

@@ -63,7 +63,8 @@ HEADERS = WebViewPlugin.h                 \
 
 TARGET = WebView
 
-RESOURCES = gui/WebView_images.qrc
+RESOURCES = gui/WebView_images.qrc \
+    html_rc.qrc
 
 
 LIBS += -lspeex -lspeexdsp

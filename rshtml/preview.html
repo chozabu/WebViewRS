@@ -1,0 +1,157 @@
+<html>
+
+<title>CodeMirror: HTML5 preview</title>
+<meta charset="utf-8"/>
+
+<link rel=stylesheet href=codemirror/codemirror.css>
+<script src=codemirror/codemirror.js></script>
+<script src=codemirror/mode/xml/xml.js></script>
+<script src=codemirror/mode/javascript/javascript.js></script>
+<script src=codemirror/mode/css/css.js></script>
+<script src=codemirror/mode/htmlmixed/htmlmixed.js></script>
+<style type=text/css>
+      .CodeMirror {
+        float: left;
+        width: 50%;
+        border: 1px solid black;
+        height: 500px;
+      }
+      iframe {
+        width: 49%;
+        float: left;
+        height: 500px;
+        border: 1px solid black;
+        border-left: 0px;
+      }
+    </style>
+
+
+<article>
+<h2>HTML5 preview</h2>
+
+<p> Local notes - <a href="index.html">back to index</a>
+
+    <input name="urlInput" id="urlInput" type="text" value="search2.html" onkeypress="return urlKeyDown(event)" /> <button onclick=
+    "submitURL()">Load URL</button>
+
+</p>
+    <textarea id=code name=code>
+    
+    
+    
+    
+    
+    
+<!doctype html>
+<html>
+  <head>
+    <meta charset=utf-8>
+    <title>RetroShare Test</title>
+    <style>p {font-family: monospace;}</style>
+  </head>
+  <body>
+    
+Enter code on the left<br>
+The snippet from index below shows packets from friends running this plugin<br>
+Compatable Peers:
+<p id="peerlistplain"></p>
+Last packet from peers
+<p id="peerlist"></p>
+    
+    <script>
+      setTimeout(tick,100);
+     
+      var peers = {}
+      bridge.msgPush.connect(incomingMsg);
+      function incomingMsg(message){
+        //msg = JSON.parse(message.message);
+        id = message.peerID;
+        name = message.peerName;
+      
+      //make peer if missing
+        if(!(id in peers)){
+            peers[id] = {"name":name}
+            peerPanel = "<p id='"+id+"'>"+peers[id].name+"</p>";
+            document.getElementById("peerlist").innerHTML+=peerPanel;
+      
+            peerPanel =peers[id].name+" <a href=directchat.html?peerid="+id+">chat</a><br/>";
+            document.getElementById("peerlistplain").innerHTML+=peerPanel;
+      
+         }
+      
+         //show peers last  message
+         peerPanel = peers[id].name+"<br/>Last message="+message.message;
+         document.getElementById(id).innerHTML = peerPanel
+      
+      }
+            
+      //send a message to everyone each second, so they know we are alive
+      function tick(){
+          var packetdata = {"type":"liveping","msg":"Well, Hello!"};
+          bridge.broadcastMessage(JSON.stringify(packetdata));
+          setTimeout(tick,1000);
+      }
+
+    </script>
+  </body>
+</html>
+
+
+
+</textarea>
+    <iframe id=preview></iframe>
+    <script>
+      var delay;
+      // Initialize CodeMirror editor with a nice html5 canvas demo.
+      var editor = CodeMirror.fromTextArea(document.getElementById('code'), {
+        mode: 'text/html',
+        tabMode: 'indent'
+      });
+      
+      if (localStorage.rspreview == undefined)localStorage.rspreview = editor.getValue();
+      else editor.setValue(localStorage.rspreview);
+      
+      editor.on("change", function() {
+        clearTimeout(delay);
+        delay = setTimeout(updatePreview, 300);
+      });
+      
+      function updatePreview() {
+        var previewFrame = document.getElementById('preview');
+        var id = previewFrame.contentWindow.setTimeout(function() {}, 0);
+
+        while (id--) {
+            previewFrame.contentWindow.clearTimeout(id); // will do nothing if no timeout with id is present
+        }
+        previewFrame.contentWindow.bridge = bridge;
+        var preview =  previewFrame.contentDocument ||  previewFrame.contentWindow.document;
+        preview.open();
+        preview.write(editor.getValue());
+        preview.close();
+        localStorage.rspreview = editor.getValue();
+        
+        document.title = "CodeMirror: "+previewFrame.contentDocument.title;
+      }
+      setTimeout(updatePreview, 300);
+      function loadURL(url){
+        var req = new XMLHttpRequest();  
+        req.open('GET', url, false);   
+        req.send(null);  
+        if(req.status == 0)  
+          editor.setValue(req.responseText);
+      }
+      function urlKeyDown(e) {
+          if (e.keyCode == 13) {
+                submitURL();
+              return false;
+          }
+      }
+      function submitURL()
+      {
+        var input = document.getElementById('urlInput');
+        console.log(input.value)
+        loadURL(input.value);
+      }
+    </script>
+  </article>
+</html>
