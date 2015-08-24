@@ -62,7 +62,7 @@ function testSearch(){
       
       //if is a local file//todo better method
       if ((results[i].fullpath!="" && results[i].fullpath!=undefined)){
-        actualpath = results[i].fullpath + "/" + results[i].srname;
+        actualpath = "file://" + results[i].fullpath + "/" + results[i].srname;
 		console.log("Local file: " + actualpath);
         var httplink = " or <a href='"+actualpath+"'>direct link</a>";
         resultPanel+=httplink+"<br/>";
