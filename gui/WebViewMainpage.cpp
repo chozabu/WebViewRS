@@ -50,7 +50,7 @@ void WebViewMainpage::on_pingAllButton_clicked()
 
 void WebViewMainpage::NeMsgArrived(const RsPeerId &peer_id, QString str)
 {
-	QJsonDocument jdoc = QJsonDocument::fromJson(str.toUtf8());
+	/*QJsonDocument jdoc = QJsonDocument::fromJson(str.toUtf8());
 	QVariantMap vmap = jdoc.toVariant().toMap();
 	std::cout << "GUI got Packet from: " << peer_id;
 	std::cout << " saying " << str.toStdString();
@@ -73,7 +73,7 @@ void WebViewMainpage::NeMsgArrived(const RsPeerId &peer_id, QString str)
 		output+=": ";
 		output+=str;
 		//ui->netLogWidget->addItem(output);
-	}
+	}*/
 }
 
 void WebViewMainpage::on_broadcastButton_clicked()

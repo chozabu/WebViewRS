@@ -36,6 +36,8 @@
 
 #include "gui/WebViewNotify.h"
 
+#include "../gui/webbridgers.h"
+
 
 //#define DEBUG_WebView		1
 
@@ -181,7 +183,7 @@ void p3WebView::msg_all(std::string msg){
 	std::list<RsPeerId>::iterator it;
 	for(it = onlineIds.begin(); it != onlineIds.end(); it++)
 	{
-		str_msg_peer(RsPeerId(*it),QString::fromStdString(msg));
+		raw_msg_peer(RsPeerId(*it),msg);
 	}
 }
 
@@ -198,6 +200,22 @@ void p3WebView::handleData(RsWebViewDataItem *item)
 
 	// store the data in a queue.
 
+    //std::cout << "GOT MSG\n";
+    /*std::string msg = item->getMessage();
+    //std::cout << msg << "\n\n";
+    if (msg.substr(0,4).compare("JINT") == 0){
+        compatablePeers.insert(item->PeerId().c_str(),msg.c_str());
+        return;
+    }*/
+    QVariantMap qDict;
+    qDict.insert("message",QString(item->m_msg.c_str()));
+    qDict.insert("peerID",QString(item->PeerId().toStdString().c_str()));
+    qDict.insert("peerName",QString(rsPeers->getPeerName(item->PeerId()).c_str()));
+    /*QStringList qMsg;
+    qMsg.append(QString(item->getMessage().c_str()));
+    qMsg.append(QString(item->PeerId().c_str()));
+    qMsg.append(QString(rsPeers->getPeerName(item->PeerId()).c_str()));*/
+    eBridge->pushMsgToJs(qDict);
 
 	mNotify->notifyReceivedMsg(item->PeerId(), QString::fromStdString(item->m_msg));
 }

@@ -72,12 +72,19 @@ void WebBridgeRS::runPythonFile(QString fileName){
 }
 #endif
 QPixmap WebBridgeRS::getAvatarDetails(QString ssl_id){
-    if (!avatars.contains(ssl_id)){
+    std::cout << "\navatar requested\n";
+    if (1){//!avatars.contains(ssl_id)){
+        std::cout << "not in cache\n";
         QPixmap avatar;
-        AvatarDefs::getAvatarFromGpgId(rsPeers->getGPGId(RsPeerId(ssl_id.toStdString())), avatar);
-        avatars.insert(ssl_id,avatar);
+        AvatarDefs::getAvatarFromSslId(RsPeerId(ssl_id.toStdString()), avatar);
+        //avatars.insert(ssl_id,avatar);
+        std::cout << "null? " << avatar.isNull();
+        std::cout << "\nwidth: " << avatar.size().width();
+        std::cout << "\nadded to cache DONE\n\n";
+
         return avatar;
     }
+    std::cout << "DONE in cache\n";
     return avatars[ssl_id];
 }
 
@@ -536,6 +543,7 @@ QVariantMap WebBridgeRS::searchKeywords(const QString& keywords, QVariantMap sea
 
 void WebBridgeRS::pushMsgToJs(QVariantMap message)
 {
+    std::cout << "pushing message\n";
     emit msgPush(message);
 }
 
