@@ -3,11 +3,13 @@
 //#include "services/p3WebView.h"
 #include "interface/rsWebView.h"
 #include<qjsondocument.h>
+#include "webbridgers.h"
 
 //#include "webenginepagepanel.h"
 #include "webtabcontents.h"
 
 
+WebBridgeRS *eBridge = new WebBridgeRS();
 WebViewMainpage::WebViewMainpage(QWidget *parent, WebViewNotify *notify) :
 	MainPage(parent),
 	mNotify(notify),

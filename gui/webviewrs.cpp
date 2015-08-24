@@ -1,9 +1,10 @@
 #include "webviewrs.h"
 #include <QDebug>
 #include <QWebFrame>
-//#include "webbridgers.h"
+#include "webbridgers.h"
 #include "gui/RetroShareLink.h"
 #include "gui/notifyqt.h"
+#include "retroshare/rsfiles.h"
 
 WebViewRS::WebViewRS(QWidget *parent) :
     QWebView(parent)
@@ -22,11 +23,11 @@ WebViewRS::~WebViewRS()
     //this->close();
 }
 void WebViewRS::onDownloadComplete(QString hash){
-    /*if (hash == hashque){
+    if (hash == hashque){
 
         FileInfo fi;
         // look up path
-        if (rsFiles->alreadyHaveFile(hash.toStdString(), fi)){
+        if (rsFiles->alreadyHaveFile(RsFileHash(hash.toStdString()), fi)){
             QString qpath(fi.path.c_str());
             QString name(fi.fname.c_str());
             if(!qpath.endsWith(name)){
@@ -37,7 +38,7 @@ void WebViewRS::onDownloadComplete(QString hash){
             this->setUrl(newurl);
             return;
         }
-    }*/
+    }
 }
 
 void WebViewRS::onLinkClicked(const QUrl & url){
@@ -59,10 +60,10 @@ void WebViewRS::onLinkClicked(const QUrl & url){
 }
 
 void WebViewRS::loadRSFile(QString qname, QString qhash, int qsize){
-/*
+
     FileInfo fi;
     //look up path
-    if (rsFiles->alreadyHaveFile(qhash.toStdString(), fi)){
+    if (rsFiles->alreadyHaveFile(RsFileHash(qhash.toStdString()), fi)){
         QString qpath(fi.path.c_str());
         QString name(fi.fname.c_str());
         if(!qpath.endsWith(name)){
@@ -78,9 +79,9 @@ void WebViewRS::loadRSFile(QString qname, QString qhash, int qsize){
     // Get a list of available direct sources, in case the file is browsable only.
     //
     FileInfo finfo ;
-    rsFiles->FileDetails(qhash.toStdString(), RS_FILE_HINTS_REMOTE, finfo) ;
+    rsFiles->FileDetails(RsFileHash(qhash.toStdString()), RS_FILE_HINTS_REMOTE, finfo) ;
 
-    std::list<std::string> srcIds;
+    std::list<RsPeerId> srcIds;
     for(std::list<TransferInfo>::const_iterator it(finfo.peers.begin());it!=finfo.peers.end();++it)
     {
     #ifdef DEBUG_RSLINK
@@ -89,9 +90,9 @@ void WebViewRS::loadRSFile(QString qname, QString qhash, int qsize){
         srcIds.push_back((*it).peerId) ;
     }
 
-    if (rsFiles->FileRequest(qname.toStdString(), qhash.toStdString(), qsize, "", RS_FILE_REQ_ANONYMOUS_ROUTING, srcIds)) {
+    if (rsFiles->FileRequest(qname.toStdString(), RsFileHash(qhash.toStdString()), qsize, "", RS_FILE_REQ_ANONYMOUS_ROUTING, srcIds)) {
     } else {
-    }*/
+    }
 }
 
 void WebViewRS::onJavaScriptWindowObjectCleared()
@@ -99,7 +100,7 @@ void WebViewRS::onJavaScriptWindowObjectCleared()
     QWebFrame *frame = this->page()->mainFrame();
     //frame->setZoomFactor(4);
     frame->addToJavaScriptWindowObject("webview", this);
-    //frame->addToJavaScriptWindowObject("bridge", eBridge);
+    frame->addToJavaScriptWindowObject("bridge", eBridge);
 }
 
 

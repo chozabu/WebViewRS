@@ -43,7 +43,9 @@ SOURCES = WebViewPlugin.cpp               \
     gui/WebViewNotify.cpp \
     gui/webenginepagepanel.cpp \
     gui/webviewrs.cpp \
-    gui/webtabcontents.cpp
+    gui/webtabcontents.cpp \
+    gui/webbridgers.cpp \
+    gui/filedownloader.cpp
 
 HEADERS = WebViewPlugin.h                 \
           services/p3WebView.h            \
@@ -53,7 +55,9 @@ HEADERS = WebViewPlugin.h                 \
     gui/WebViewNotify.h \
     gui/webenginepagepanel.h \
     gui/webviewrs.h \
-    gui/webtabcontents.h
+    gui/webtabcontents.h \
+    gui/webbridgers.h \
+    gui/filedownloader.h
 
 #FORMS   = gui/AudioInputConfig.ui
 
